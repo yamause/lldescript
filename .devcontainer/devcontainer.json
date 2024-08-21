@@ -1,0 +1,15 @@
+{
+  "name": "lldescript",
+  "build": { "dockerfile": "Dockerfile" },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "windmilleng.vscode-go-autotest",
+        "editorconfig.editorconfig",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens"
+      ]
+    }
+  }
+}

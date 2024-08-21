@@ -1,0 +1,17 @@
+*.bak
+*.orig
+.*.swp
+.DS_Store
+thumbs.db
+.vscode
+.envrc
+.bashrc
+.env
+
+# Go
+go.work
+go.work.sum
+go.mod
+go.mod.sum
+
+lldescript
