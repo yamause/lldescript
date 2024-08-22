@@ -39,7 +39,6 @@ func get(tg target.Target, ctx context.Context) ([]LLDPDate, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println(prototext.Format(getReq))
 
 	// send the created gNMI GetRequest to the created target
 	getResp, err := tg.Get(ctx, getReq)

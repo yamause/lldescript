@@ -11,7 +11,5 @@ thumbs.db
 # Go
 go.work
 go.work.sum
-go.mod
-go.mod.sum
 
 lldescript
