@@ -32,6 +32,7 @@ type LLDPDate struct {
 	LocalIf  string
 }
 
+
 func get(tg target.Target, ctx context.Context) ([]LLDPDate, error) {
 	getReq, err := api.NewGetRequest(
 		api.Path("/lldp/interfaces/interface/neighbors/neighbor/state"),
@@ -46,7 +47,7 @@ func get(tg target.Target, ctx context.Context) ([]LLDPDate, error) {
 		return nil, fmt.Errorf("failed to get response from target: %w", err)
 	}
 
-	var lldpData []LLDPDate
+	var lldpDatas []LLDPDate
 	for _, notifi := range getResp.GetNotification() {
 		for _, update := range notifi.Update {
 			var neighbor Neighbor
@@ -55,19 +56,16 @@ func get(tg target.Target, ctx context.Context) ([]LLDPDate, error) {
 			if err != nil {
 				return nil, fmt.Errorf("railed to unmarshal json: %v, error: %v", update.Val.GetJsonIetfVal(), err)
 			}
-			lldpData = append(lldpData, LLDPDate{neighbor, localif})
+			lldpDatas = append(lldpDatas, LLDPDate{neighbor, localif})
 		}
 	}
-	return lldpData, nil
+	return lldpDatas, nil
 }
 
-func set(tg target.Target, ctx context.Context, path string, descr string) (string, error) {
+func set(tg target.Target, ctx context.Context, update []api.GNMIOption) (string, error) {
+
 	// create a gNMI SetRequest
-	setReq, err := api.NewSetRequest(
-		api.Update(
-			api.Path(path),
-			api.Value(descr, "json_ietf")),
-	)
+	setReq, err := api.NewSetRequest(update...)
 	if err != nil {
 		return "", fmt.Errorf("failed to set response from target: %w", err)
 	}
@@ -107,23 +105,29 @@ func main() {
 	}
 	defer tg.Close()
 
-	gr, err := get(*tg, ctx)
+	gr, _ := get(*tg, ctx)
 
 	counts := make(map[string]int)
 
-	// Set interface description.
-	for _, r := range gr {
-		path := fmt.Sprintf("/interfaces/interface[name=%s]/config/description", r.LocalIf)
-		descr := fmt.Sprintf("to:%s %s", r.Neighbor.SystemName, r.Neighbor.PortID)
+	var update []api.GNMIOption
 
-		// Determine if there are multiple connections.
-		counts[r.LocalIf]++
-		if counts[r.LocalIf] > 1 {
-			descr = "to:multiple connections"
+	for _, lldp := range gr {
+		// 	Determine if there are multiple connections.
+		path := fmt.Sprintf("/interfaces/interface[name=%s]/config/description", lldp.LocalIf)
+		val := fmt.Sprintf("to:%s %s",lldp.Neighbor.SystemName, lldp.LocalIf)
+		counts[lldp.LocalIf]++
+
+		if counts[lldp.LocalIf] > 1 {
+			val = "to:multiple connections"
 		}
-		_, err = set(*tg, ctx, path, descr)
-		fmt.Println(descr)
+		update = append(update, api.Update(
+			api.Path(path),
+			api.Value(val, "json_ietf")))
 	}
+
+	r, err := set(*tg, ctx, update)
+
+	fmt.Println(r)
 
 	if err != nil {
 		log.Fatal(err)
